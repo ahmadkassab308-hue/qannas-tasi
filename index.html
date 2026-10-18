@@ -1,254 +1,407 @@
 
-<!doctype html>
+<!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>⚡ قناص تاسي</title>
-<style>
-:root{color-scheme:dark}
-*{box-sizing:border-box}
-body{margin:0;background:#071710;color:#edf8f0;font-family:Tahoma,Arial,sans-serif}
-main{max-width:720px;margin:auto;padding:16px}
-header{background:linear-gradient(120deg,#07563d,#12342b);border-radius:18px;padding:23px;margin-bottom:16px}
-h1{margin:0 0 9px;font-size:28px}
-h2{font-size:18px;margin:0 0 15px}
-p{line-height:1.8}
-.card{background:#11271d;border:1px solid #30523e;border-radius:16px;padding:18px;margin-bottom:15px}
-label{display:block;font-weight:bold;margin:14px 0}
-input,select,textarea{display:block;width:100%;margin-top:8px;padding:12px;background:#071a12;color:#fff;border:1px solid #486550;border-radius:10px;font:inherit}
-button{border:0;border-radius:11px;background:#12ba80;color:#04251a;padding:14px;font-weight:bold;font-size:16px;cursor:pointer;width:100%}
-button:disabled{opacity:.5;cursor:wait}
-small,.muted{color:#a8c6b4}
-.preview{display:block;max-width:100%;max-height:220px;object-fit:contain;margin:10px auto;border-radius:9px}
-.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.tile{background:#0a2017;padding:12px;border-radius:10px}
-.tile span{display:block;color:#a8c6b4;font-size:12px;margin-bottom:8px}
-.result{white-space:pre-wrap;line-height:1.95;overflow-wrap:anywhere}
-.hidden{display:none}
-#error{color:#ffaaa7}
-#status{color:#8ce7b8}
-footer{font-size:12px;color:#a8c6b4;line-height:1.8}
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#071811">
+  <title>⚡ قناص تاسي Pro</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: #071811;
+      color: #eef8f1;
+      font-family: Tahoma, Arial, sans-serif;
+      line-height: 1.7;
+    }
+    .container {
+      max-width: 700px;
+      margin: auto;
+      padding: 15px;
+    }
+    .hero {
+      padding: 25px 18px;
+      border-radius: 18px;
+      background: linear-gradient(135deg,#08714f,#092c20);
+      margin-bottom: 16px;
+      text-align: center;
+    }
+    .hero h1 { margin: 0; font-size: 29px; }
+    .hero p { margin: 8px 0 0; color: #c3e8d4; }
+    .card {
+      background: #10271c;
+      border: 1px solid #31533d;
+      border-radius: 15px;
+      padding: 17px;
+      margin-bottom: 15px;
+    }
+    h2 { margin: 0 0 13px; font-size: 18px; }
+    label {
+      display: block;
+      font-size: 14px;
+      font-weight: bold;
+      margin: 14px 0;
+    }
+    input, select {
+      width: 100%;
+      padding: 12px;
+      margin-top: 7px;
+      border-radius: 10px;
+      border: 1px solid #42634e;
+      background: #071811;
+      color: white;
+      font-size: 15px;
+    }
+    input[type=file] { font-size: 12px; }
+    button {
+      width: 100%;
+      padding: 14px;
+      background: #12bf82;
+      color: #052519;
+      border: 0;
+      border-radius: 11px;
+      font-weight: bold;
+      font-size: 16px;
+      cursor: pointer;
+    }
+    button:disabled { opacity: .5; }
+    .muted { color: #abc8b6; font-size: 13px; }
+    .hidden { display: none !important; }
+    .preview {
+      display: block;
+      max-width: 100%;
+      max-height: 230px;
+      margin: 10px auto;
+      border-radius: 9px;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 15px;
+    }
+    .tile {
+      background: #092016;
+      padding: 13px;
+      border-radius: 10px;
+    }
+    .tile span {
+      display: block;
+      color: #a8c5b4;
+      font-size: 12px;
+    }
+    .tile strong { font-size: 14px; }
+    #report {
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+      line-height: 2;
+    }
+    #error { color: #ffaaa7; }
+    #status { color: #8de5b9; }
+    footer {
+      text-align: center;
+      color: #a8c5b4;
+      font-size: 12px;
+      padding: 10px 0 25px;
+    }
+  </style>
 </head>
 <body>
-<main>
-<header>
-<h1>⚡ قناص تاسي</h1>
-<div>محلل شارتات الأسهم السعودية بالذكاء الاصطناعي</div>
-<p class="muted">مضاربة 5–15 دقيقة · صور الشارتات · تحليل تعليمي</p>
-</header>
 
-<section class="card">
-<h2>① اختر السهم</h2>
-<label>اسم السهم
-<select id="stock">
-<option value="2200 - أنابيب">2200 - أنابيب</option>
-<option value="1180 - الأهلي">1180 - الأهلي</option>
-<option value="1120 - الراجحي">1120 - الراجحي</option>
-<option value="2222 - أرامكو">2222 - أرامكو</option>
-<option value="1150 - الإنماء">1150 - الإنماء</option>
-<option value="1325 - حديد وطني">1325 - حديد وطني</option>
-<option value="2082 - أكوا باور">2082 - أكوا باور</option>
-<option value="other">سهم آخر</option>
-</select>
-</label>
-<label id="customWrap" class="hidden">
-رمز أو اسم السهم
-<input id="custom" maxlength="80" placeholder="مثال: 1211 معادن">
-</label>
-<label>وقت التقاط الصور
-<input id="time" type="datetime-local">
-</label>
-</section>
+<div class="container">
 
-<section class="card">
-<h2>② ارفع الشارتات</h2>
-<p class="muted">تأكد من ظهور الأسعار والفاصل الزمني وحجم التداول.</p>
-<label>شارت الدقيقة — مطلوب
-<input id="one" type="file" accept="image/png,image/jpeg,image/webp">
-<img id="onePreview" class="preview hidden" alt="شارت الدقيقة">
-</label>
-<label>شارت 5 دقائق — مطلوب
-<input id="five" type="file" accept="image/png,image/jpeg,image/webp">
-<img id="fivePreview" class="preview hidden" alt="شارت 5 دقائق">
-</label>
-<label>شارت 15 دقيقة — اختياري
-<input id="fifteen" type="file" accept="image/png,image/jpeg,image/webp">
-<img id="fifteenPreview" class="preview hidden" alt="شارت 15 دقيقة">
-</label>
-</section>
+  <header class="hero">
+    <h1>⚡ قناص تاسي Pro</h1>
+    <p>التحليل الفني الذكي للأسهم السعودية</p>
+    <p>شارت الدقيقة · 5 دقائق · 15 دقيقة</p>
+  </header>
 
-<section class="card">
-<h2>③ التحليل الذكي</h2>
-<label>كلمة مرور الموقع
-<input id="password" type="password" autocomplete="off"
-placeholder="أدخل كلمة المرور التي أعددتها في Vercel">
-</label>
-<button id="analyze">⚡ تحليل الشارتات الآن</button>
-<p id="status"></p>
-<p id="error"></p>
-</section>
+  <section class="card">
+    <h2>① اختيار السهم</h2>
 
-<section id="reportCard" class="card hidden">
-<h2>📊 نتيجة التحليل</h2>
-<div class="grid">
-<div class="tile"><span>السهم</span><strong id="resultStock">—</strong></div>
-<div class="tile"><span>حالة التقرير</span><strong>تحليل الصور</strong></div>
+    <label>السهم
+      <select id="stock">
+        <option value="2200 - أنابيب">2200 - أنابيب</option>
+        <option value="1180 - الأهلي">1180 - الأهلي</option>
+        <option value="1120 - الراجحي">1120 - الراجحي</option>
+        <option value="2222 - أرامكو">2222 - أرامكو</option>
+        <option value="1150 - الإنماء">1150 - الإنماء</option>
+        <option value="2082 - أكوا باور">2082 - أكوا باور</option>
+        <option value="1325 - حديد وطني">1325 - حديد وطني</option>
+        <option value="other">سهم آخر</option>
+      </select>
+    </label>
+
+    <label id="customWrap" class="hidden">
+      اسم أو رمز السهم
+      <input id="custom" maxlength="80"
+             placeholder="مثال: 1211 معادن">
+    </label>
+
+    <label>وقت التقاط الصور
+      <input id="time" type="datetime-local">
+    </label>
+  </section>
+
+  <section class="card">
+    <h2>② رفع صور الشارتات</h2>
+    <p class="muted">
+      ارفع صورًا واضحة تظهر الأسعار والشموع
+      والفواصل الزمنية وأحجام التداول إن توفرت.
+    </p>
+
+    <label>📈 شارت الدقيقة (مطلوب)
+      <input id="one" type="file"
+             accept="image/png,image/jpeg,image/webp">
+      <img id="onePreview" class="preview hidden"
+           alt="معاينة شارت الدقيقة">
+    </label>
+
+    <label>📊 شارت 5 دقائق (مطلوب)
+      <input id="five" type="file"
+             accept="image/png,image/jpeg,image/webp">
+      <img id="fivePreview" class="preview hidden"
+           alt="معاينة شارت 5 دقائق">
+    </label>
+
+    <label>📉 شارت 15 دقيقة (اختياري)
+      <input id="fifteen" type="file"
+             accept="image/png,image/jpeg,image/webp">
+      <img id="fifteenPreview" class="preview hidden"
+           alt="معاينة شارت 15 دقيقة">
+    </label>
+  </section>
+
+  <section class="card">
+    <h2>③ تحليل الشارتات</h2>
+
+    <label>كلمة مرور الموقع
+      <input id="password" type="password"
+             autocomplete="off"
+             placeholder="كلمة المرور التي وضعتها في Vercel">
+    </label>
+
+    <button id="analyze">
+      ⚡ تحليل الشارتات الآن
+    </button>
+
+    <p id="status"></p>
+    <p id="error"></p>
+  </section>
+
+  <section id="reportCard" class="card hidden">
+    <h2>📋 التقرير الفني</h2>
+
+    <div class="grid">
+      <div class="tile">
+        <span>السهم</span>
+        <strong id="resultStock">—</strong>
+      </div>
+      <div class="tile">
+        <span>نوع التحليل</span>
+        <strong>صور الشارتات</strong>
+      </div>
+    </div>
+
+    <div id="report"></div>
+
+    <button id="copy" style="margin-top:18px">
+      نسخ التقرير
+    </button>
+  </section>
+
+  <footer>
+    يعتمد التحليل على الصور المرفقة،
+    وليس على بيانات سوق مباشرة.
+    <p>
+      This is general information only and not financial advice.
+      For personal guidance, please talk to a licensed professional.
+    </p>
+  </footer>
+
 </div>
-<hr style="border:0;border-top:1px solid #30523e;margin:16px 0">
-<div id="report" class="result"></div>
-<button id="copy" style="margin-top:18px">نسخ التقرير</button>
-</section>
-
-<footer>
-التحليل يعتمد على الصور فقط وليس على أسعار مباشرة.
-قد تخطئ النماذج في قراءة الأرقام الصغيرة؛ تحقق من كل مستوى.
-<br>
-This is general information only and not financial advice.
-For personal guidance, please talk to a licensed professional.
-</footer>
-</main>
 
 <script>
-const $ = id => document.getElementById(id);
-const periods = [
-  ["one","1m"],
-  ["five","5m"],
-  ["fifteen","15m"]
-];
-const images = {};
-let lastReport = "";
+  const $ = id => document.getElementById(id);
 
-$("stock").addEventListener("change",()=>{
-  $("customWrap").classList.toggle(
-    "hidden",$("stock").value!=="other"
-  );
-});
+  const images = {};
+  let lastReport = "";
 
-function compress(file) {
-  return new Promise((resolve,reject)=>{
-    if(!["image/png","image/jpeg","image/webp"].includes(file.type)){
-      reject(new Error("صيغة الصورة غير مدعومة."));
-      return;
-    }
-    if(file.size > 12*1024*1024){
-      reject(new Error("حجم الصورة الأصلية كبير جدًا."));
-      return;
-    }
+  $("stock").addEventListener("change", () => {
+    $("customWrap").classList.toggle(
+      "hidden",
+      $("stock").value !== "other"
+    );
+  });
 
-    const img = new Image();
-    const url = URL.createObjectURL(file);
-    img.onload = ()=>{
-      try {
-        const maxSide = 1600;
-        const ratio = Math.min(1,maxSide/Math.max(img.width,img.height));
-        const canvas = document.createElement("canvas");
-        canvas.width = Math.round(img.width*ratio);
-        canvas.height = Math.round(img.height*ratio);
-        const ctx = canvas.getContext("2d");
-        ctx.fillStyle = "#ffffff";
-        ctx.fillRect(0,0,canvas.width,canvas.height);
-        ctx.drawImage(img,0,0,canvas.width,canvas.height);
-        const data = canvas.toDataURL("image/jpeg",0.78);
-        URL.revokeObjectURL(url);
-        resolve(data);
-      } catch(e){
-        URL.revokeObjectURL(url);
-        reject(e);
+  function compress(file) {
+    return new Promise((resolve, reject) => {
+      if (!["image/png","image/jpeg","image/webp"].includes(file.type)) {
+        reject(new Error("صيغة الصورة غير مدعومة."));
+        return;
       }
-    };
-    img.onerror = ()=>{
-      URL.revokeObjectURL(url);
-      reject(new Error("تعذر فتح الصورة."));
-    };
-    img.src = url;
-  });
-}
 
-periods.forEach(([input,period])=>{
-  $(input).addEventListener("change",async e=>{
-    const file = e.target.files?.[0];
-    delete images[period];
-    $(input+"Preview").classList.add("hidden");
-    if(!file)return;
-    $("error").textContent="";
-    try {
-      const data = await compress(file);
-      images[period]=data;
-      $(input+"Preview").src=data;
-      $(input+"Preview").classList.remove("hidden");
-      $("status").textContent="تم تجهيز صورة "+period;
-    } catch(err){
-      $("error").textContent=err.message;
-      e.target.value="";
-    }
-  });
-});
+      if (file.size > 12 * 1024 * 1024) {
+        reject(new Error("الصورة الأصلية كبيرة جدًا."));
+        return;
+      }
 
-$("analyze").addEventListener("click",async()=>{
-  $("error").textContent="";
-  $("status").textContent="";
-  $("reportCard").classList.add("hidden");
+      const img = new Image();
+      const url = URL.createObjectURL(file);
 
-  const stock=$("stock").value==="other"
-    ? $("custom").value.trim()
-    : $("stock").value;
+      img.onload = () => {
+        try {
+          const maxSide = 1600;
+          const ratio = Math.min(
+            1,
+            maxSide / Math.max(img.width, img.height)
+          );
 
-  if(!stock || !images["1m"] || !images["5m"]){
-    $("error").textContent=
-      "اختر السهم وأرفق شارت الدقيقة و5 دقائق.";
-    return;
-  }
-  if(!$("password").value){
-    $("error").textContent="أدخل كلمة مرور الموقع.";
-    return;
-  }
+          const canvas = document.createElement("canvas");
+          canvas.width = Math.round(img.width * ratio);
+          canvas.height = Math.round(img.height * ratio);
 
-  $("analyze").disabled=true;
-  $("status").textContent="جارٍ إرسال الصور وتحليلها...";
+          const ctx = canvas.getContext("2d");
+          ctx.fillStyle = "#ffffff";
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          ctx.drawImage(
+            img, 0, 0, canvas.width, canvas.height
+          );
 
-  try{
-    const response=await fetch("/api/analyze",{
-      method:"POST",
-      headers:{
-        "Content-Type":"application/json",
-        "x-site-password":$("password").value
-      },
-      body:JSON.stringify({
-        stock,
-        time:$("time").value,
-        images
-      })
+          const data = canvas.toDataURL("image/jpeg", 0.78);
+          URL.revokeObjectURL(url);
+          resolve(data);
+        } catch (error) {
+          URL.revokeObjectURL(url);
+          reject(error);
+        }
+      };
+
+      img.onerror = () => {
+        URL.revokeObjectURL(url);
+        reject(new Error("تعذر فتح الصورة."));
+      };
+
+      img.src = url;
     });
+  }
 
-    const data=await response.json();
-    if(!response.ok){
-      throw new Error(data.error || "تعذر التحليل.");
+  const periods = [
+    ["one", "1m"],
+    ["five", "5m"],
+    ["fifteen", "15m"]
+  ];
+
+  periods.forEach(([input, period]) => {
+    $(input).addEventListener("change", async event => {
+      const file = event.target.files?.[0];
+
+      delete images[period];
+      $(input + "Preview").classList.add("hidden");
+      $("error").textContent = "";
+
+      if (!file) return;
+
+      try {
+        const data = await compress(file);
+        images[period] = data;
+
+        $(input + "Preview").src = data;
+        $(input + "Preview").classList.remove("hidden");
+
+        $("status").textContent =
+          "تم تجهيز شارت " + period;
+      } catch (error) {
+        $("error").textContent = error.message;
+        event.target.value = "";
+      }
+    });
+  });
+
+  $("analyze").addEventListener("click", async () => {
+    $("error").textContent = "";
+    $("status").textContent = "";
+    $("reportCard").classList.add("hidden");
+
+    const stock = $("stock").value === "other"
+      ? $("custom").value.trim()
+      : $("stock").value;
+
+    if (!stock || !images["1m"] || !images["5m"]) {
+      $("error").textContent =
+        "اختر السهم وارفع شارت الدقيقة و5 دقائق.";
+      return;
     }
 
-    lastReport=data.analysis;
-    $("resultStock").textContent=stock;
-    $("report").textContent=lastReport;
-    $("reportCard").classList.remove("hidden");
-    $("status").textContent="اكتمل التقرير.";
-    $("reportCard").scrollIntoView({behavior:"smooth"});
-  }catch(err){
-    $("error").textContent=err.message;
-    $("status").textContent="";
-  }finally{
-    $("analyze").disabled=false;
-  }
-});
+    const password = $("password").value;
 
-$("copy").addEventListener("click",async()=>{
-  try{
-    await navigator.clipboard.writeText(lastReport);
-    $("status").textContent="تم نسخ التقرير.";
-  }catch{
-    $("status").textContent="تعذر النسخ التلقائي.";
-  }
-});
+    if (!password) {
+      $("error").textContent =
+        "أدخل كلمة مرور الموقع.";
+      return;
+    }
+
+    $("analyze").disabled = true;
+    $("status").textContent =
+      "جارٍ تحليل الشارتات بالذكاء الاصطناعي...";
+
+    try {
+      const response = await fetch("/api/analyze", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "x-site-password": password
+        },
+        body: JSON.stringify({
+          stock: stock,
+          time: $("time").value,
+          images: images
+        })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          data.error || "تعذر إكمال التحليل."
+        );
+      }
+
+      lastReport = data.analysis || "";
+
+      if (!lastReport) {
+        throw new Error("لم يصل تقرير التحليل.");
+      }
+
+      $("resultStock").textContent = stock;
+      $("report").textContent = lastReport;
+
+      $("reportCard").classList.remove("hidden");
+      $("status").textContent = "اكتمل التحليل.";
+
+      $("reportCard").scrollIntoView({
+        behavior: "smooth"
+      });
+
+    } catch (error) {
+      $("error").textContent = error.message;
+      $("status").textContent = "";
+    } finally {
+      $("analyze").disabled = false;
+    }
+  });
+
+  $("copy").addEventListener("click", async () => {
+    try {
+      await navigator.clipboard.writeText(lastReport);
+      $("status").textContent = "تم نسخ التقرير.";
+    } catch {
+      $("status").textContent =
+        "تعذر النسخ التلقائي.";
+    }
+  });
 </script>
+
 </body>
 </html>
