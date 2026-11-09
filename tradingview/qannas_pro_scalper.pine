@@ -188,37 +188,40 @@ bool belowVwap = na(vwap) ? close < ema50 : close < vwap
 // ═════════════════════════════════════════════════════════════
 const int MAXS = 18
 
-int bS = 0
-bS += (ema9 > ema21 and ema21 > ema50) ? 2 : 0                       // ترتيب المتوسطات
-bS += close > ema200 ? 1 : 0                                         // الاتجاه العام
-bS += trend1 == 1 ? 2 : 0                                            // الفريم الأعلى 1
-bS += trend2 == 1 ? 1 : 0                                            // الفريم الأعلى 2
-bS += stUp ? 2 : 0                                                   // Supertrend
-bS += aboveVwap ? 1 : 0                                              // VWAP
-bS += (rsi > 50 and rsi < 75) ? 1 : 0                                // RSI
-bS += (macdH > 0 and macdH > macdH[1]) ? 1 : 0                       // MACD
-bS += (stK > stD and stK < 85) ? 1 : 0                               // Stoch RSI
-bS += (adx >= minAdx and diP > diM) ? 2 : 0                          // ADX و DMI
-bS += (hasVol ? rvol >= rvolMin and close > open : close > open) ? 1 : 0 // الحجم
-bS += mktStruct == 1 ? 1 : 0                                         // هيكل السوق
-bS += bullPat ? 1 : 0                                                // نموذج الشمعة
-bS += (mom > 0 and mom > mom[1]) ? 1 : 0                             // الزخم
+// عوامل الشراء
+bool bf1  = ema9 > ema21 and ema21 > ema50                    // ترتيب المتوسطات
+bool bf2  = close > ema200                                    // الاتجاه العام
+bool bf3  = trend1 == 1                                       // الفريم الأعلى 1
+bool bf4  = trend2 == 1                                       // الفريم الأعلى 2
+bool bf5  = stUp                                              // Supertrend
+bool bf6  = aboveVwap                                         // VWAP
+bool bf7  = rsi > 50 and rsi < 75                             // RSI
+bool bf8  = macdH > 0 and macdH > macdH[1]                    // MACD
+bool bf9  = stK > stD and stK < 85                            // Stoch RSI
+bool bf10 = adx >= minAdx and diP > diM                       // ADX و DMI
+bool bf11 = hasVol ? rvol >= rvolMin and close > open : close > open // الحجم
+bool bf12 = mktStruct == 1                                    // هيكل السوق
+bool bf13 = bullPat                                           // نموذج الشمعة
+bool bf14 = mom > 0 and mom > mom[1]                          // الزخم
 
-int sS = 0
-sS += (ema9 < ema21 and ema21 < ema50) ? 2 : 0
-sS += close < ema200 ? 1 : 0
-sS += trend1 == -1 ? 2 : 0
-sS += trend2 == -1 ? 1 : 0
-sS += not stUp ? 2 : 0
-sS += belowVwap ? 1 : 0
-sS += (rsi < 50 and rsi > 25) ? 1 : 0
-sS += (macdH < 0 and macdH < macdH[1]) ? 1 : 0
-sS += (stK < stD and stK > 15) ? 1 : 0
-sS += (adx >= minAdx and diM > diP) ? 2 : 0
-sS += (hasVol ? rvol >= rvolMin and close < open : close < open) ? 1 : 0
-sS += mktStruct == -1 ? 1 : 0
-sS += bearPat ? 1 : 0
-sS += (mom < 0 and mom < mom[1]) ? 1 : 0
+// عوامل البيع
+bool sf1  = ema9 < ema21 and ema21 < ema50
+bool sf2  = close < ema200
+bool sf3  = trend1 == -1
+bool sf4  = trend2 == -1
+bool sf5  = not stUp
+bool sf6  = belowVwap
+bool sf7  = rsi < 50 and rsi > 25
+bool sf8  = macdH < 0 and macdH < macdH[1]
+bool sf9  = stK < stD and stK > 15
+bool sf10 = adx >= minAdx and diM > diP
+bool sf11 = hasVol ? rvol >= rvolMin and close < open : close < open
+bool sf12 = mktStruct == -1
+bool sf13 = bearPat
+bool sf14 = mom < 0 and mom < mom[1]
+
+int bS = (bf1 ? 2 : 0) + (bf2 ? 1 : 0) + (bf3 ? 2 : 0) + (bf4 ? 1 : 0) + (bf5 ? 2 : 0) + (bf6 ? 1 : 0) + (bf7 ? 1 : 0) + (bf8 ? 1 : 0) + (bf9 ? 1 : 0) + (bf10 ? 2 : 0) + (bf11 ? 1 : 0) + (bf12 ? 1 : 0) + (bf13 ? 1 : 0) + (bf14 ? 1 : 0)
+int sS = (sf1 ? 2 : 0) + (sf2 ? 1 : 0) + (sf3 ? 2 : 0) + (sf4 ? 1 : 0) + (sf5 ? 2 : 0) + (sf6 ? 1 : 0) + (sf7 ? 1 : 0) + (sf8 ? 1 : 0) + (sf9 ? 1 : 0) + (sf10 ? 2 : 0) + (sf11 ? 1 : 0) + (sf12 ? 1 : 0) + (sf13 ? 1 : 0) + (sf14 ? 1 : 0)
 
 float bPct = bS * 100.0 / MAXS
 float sPct = sS * 100.0 / MAXS
@@ -235,6 +238,51 @@ bool notExtS = (ema21 - close) <= maxExtAtr * atr
 
 bool buyRaw  = bPct >= minScore and bPct > sPct and close > open and close > ema21 and adxOk and volatOk and sessOk and notExtB
 bool sellRaw = sPct >= minScore and sPct > bPct and close < open and close < ema21 and adxOk and volatOk and sessOk and notExtS
+
+// تقدير المدة: عدد الشموع اللازمة لقطع مسافة الهدف 1 بمتوسط حركة الشمعة
+f_est(float risk) =>
+    int estBars = math.max(1, int(math.round(rr1 * risk / math.max(0.6 * atr, syminfo.mintick))))
+    math.max(minHold, math.min(maxHold, int(math.round(estBars * tfMin))))
+
+f_sl(int d, float entry) =>
+    float sl = d == 1 ? math.min(swLow - 0.1 * atr, entry - slAtr * atr) : math.max(swHigh + 0.1 * atr, entry + slAtr * atr)
+    d == 1 ? math.max(sl, entry - maxRisk * atr) : math.min(sl, entry + maxRisk * atr)
+
+// ═════════════════════════════════════════════════════════════
+// خطة الدخول المقترحة للشمعة الحالية
+// ═════════════════════════════════════════════════════════════
+int    planDir  = bPct >= sPct ? 1 : -1
+float  planPct  = planDir == 1 ? bPct : sPct
+bool   planNow  = planDir == 1 ? buyRaw : sellRaw
+float  planEntry = na
+string planType  = ""
+if planDir == 1
+    if buyRaw
+        planEntry := close
+        planType  := "دخول فوري بسعر الإغلاق"
+    else if close > ema21 and close - ema21 > atr
+        planEntry := ema21
+        planType  := "أمر شراء محدد عند الارتداد إلى EMA21"
+    else
+        planEntry := math.max(swHigh, ema21) + 0.05 * atr
+        planType  := "أمر شراء معلّق عند اختراق القمة"
+else
+    if sellRaw
+        planEntry := close
+        planType  := "دخول فوري بسعر الإغلاق"
+    else if close < ema21 and ema21 - close > atr
+        planEntry := ema21
+        planType  := "أمر بيع محدد عند الارتداد إلى EMA21"
+    else
+        planEntry := math.min(swLow, ema21) - 0.05 * atr
+        planType  := "أمر بيع معلّق عند كسر القاع"
+float planSL   = f_sl(planDir, planEntry)
+float planRisk = math.max(math.abs(planEntry - planSL), syminfo.mintick)
+float planTP1  = planEntry + planDir * rr1 * planRisk
+float planTP2  = planEntry + planDir * rr2 * planRisk
+float planTP3  = planEntry + planDir * rr3 * planRisk
+int   planEst  = f_est(planRisk)
+string planGrade = planNow ? "مكتملة" : planPct >= minScore ? "قوية، تنتظر الشروط" : planPct >= 55 ? "متوسطة، للمراقبة" : "ضعيفة، لا يُنصح بالدخول"
 
 // ═════════════════════════════════════════════════════════════
 // حالة الصفقة والإحصائيات
@@ -261,6 +309,8 @@ var int    nWin    = 0
 var int    nLoss   = 0
 var float  sumR    = 0.0
 var int    lastSigBar = -100000
+var string lastRes = "لا توجد صفقة مغلقة بعد"
+var color  lastResC = C_NEU
 
 var line lE  = na
 var line lSL = na
@@ -331,6 +381,8 @@ if tDir != 0 and bar_index > tBar
         sumR += finalR
         tState  := "مغلقة: " + why + " (" + f_signR(finalR) + ")"
         tStateC := finalR > 0 ? C_BULL : finalR < 0 ? C_BEAR : C_NEU
+        lastRes  := (tDir == 1 ? "BUY " : "SELL ") + str.format_time(tTime, "HH:mm", syminfo.timezone) + "  •  " + why + "  •  " + f_signR(finalR)
+        lastResC := tStateC
         if showExits
             label.new(bar_index, low, (finalR > 0 ? "✔ " : finalR < 0 ? "✖ " : "■ ") + f_signR(finalR), yloc = yloc.belowbar, style = label.style_label_up, color = color.new(tStateC, 75), textcolor = tStateC, size = size.tiny, tooltip = why)
         tDir := 0
@@ -346,9 +398,8 @@ bool sellSig = barstate.isconfirmed and sellRaw and canSig and not buySig
 if buySig or sellSig
     int   d     = buySig ? 1 : -1
     float entry = close
-    float sl    = d == 1 ? math.min(swLow - 0.1 * atr, entry - slAtr * atr) : math.max(swHigh + 0.1 * atr, entry + slAtr * atr)
-    sl := d == 1 ? math.max(sl, entry - maxRisk * atr) : math.min(sl, entry + maxRisk * atr)
-    float risk = math.max(math.abs(entry - sl), syminfo.mintick)
+    float sl    = f_sl(d, entry)
+    float risk  = math.max(math.abs(entry - sl), syminfo.mintick)
 
     tDir    := d
     lDir    := d
@@ -368,9 +419,7 @@ if buySig or sellSig
     tStateC := C_GOLD
     lastSigBar := bar_index
 
-    // تقدير المدة: عدد الشموع اللازمة لقطع مسافة الهدف 1 بمتوسط حركة الشمعة
-    int estBars = math.max(1, int(math.round(rr1 * risk / math.max(0.6 * atr, syminfo.mintick))))
-    tEstMin := math.max(minHold, math.min(maxHold, int(math.round(estBars * tfMin))))
+    tEstMin := f_est(risk)
 
     color  c   = d == 1 ? C_BULL : C_BEAR
     string tip = (d == 1 ? "شراء" : "بيع") + "\nالدخول: " + f_px(entry) + "\nالوقف: " + f_px(sl) + "\nالهدف 1: " + f_px(tTP1) + "\nالهدف 2: " + f_px(tTP2) + "\nالهدف 3: " + f_px(tTP3) + "\nالمدة: ≈ " + str.tostring(tEstMin) + " دقيقة"
@@ -385,36 +434,61 @@ if buySig or sellSig
         lT3 := line.new(bar_index, tTP3, bar_index + 1, tTP3, color = C_BULL, width = 2)
 
 // ═════════════════════════════════════════════════════════════
-// حالة الشمعة الأخيرة وأسعار الصفقة النشطة
+// حالة الشمعة الأخيرة، مستويات الصفقة النشطة أو الخطة المقترحة
 // ═════════════════════════════════════════════════════════════
 var label liveLbl = na
 var array<label> lvlLbls = array.new<label>()
+var array<line>  planLns = array.new<line>()
+
+f_lvl(int x, float y, string t, color c) =>
+    label.new(x, y, t + " " + f_px(y), style = label.style_label_left, color = c, textcolor = color.black, size = size.tiny)
+
+f_pline(float y, color c) =>
+    line.new(bar_index, y, bar_index + 8, y, color = c, style = line.style_dashed)
 
 if barstate.islast
     label.delete(liveLbl)
     for l in lvlLbls
         label.delete(l)
     lvlLbls.clear()
+    for ln in planLns
+        line.delete(ln)
+    planLns.clear()
 
     if showLive and not buySig and not sellSig
         string lt  = buyRaw ? "BUY" : sellRaw ? "SELL" : "WAIT"
-        float  lp  = buyRaw ? bPct : sellRaw ? sPct : math.max(bPct, sPct)
         color  lc  = buyRaw ? C_BULL : sellRaw ? C_BEAR : color.new(C_NEU, 30)
-        string sub = barstate.isconfirmed ? "" : (buyRaw or sellRaw ? "\n⏳ بانتظار إغلاق الشمعة" : "")
-        liveLbl := label.new(bar_index, high + 0.8 * atr, lt + " " + str.tostring(math.round(lp)) + "%" + sub, style = label.style_label_down, color = lc, textcolor = color.black, size = size.normal)
+        string sub = ""
+        if buyRaw or sellRaw
+            sub := barstate.isconfirmed ? "" : "\n⏳ بانتظار إغلاق الشمعة"
+        else if tDir == 0 and planPct >= 55
+            sub := "\nميل " + (planDir == 1 ? "شرائي" : "بيعي") + " • دخول " + f_px(planEntry)
+        liveLbl := label.new(bar_index, high + 0.8 * atr, lt + " " + str.tostring(math.round(planPct)) + "%" + sub, style = label.style_label_down, color = lc, textcolor = color.black, size = size.normal)
 
     if showLines and tDir != 0
-        lvlLbls.push(label.new(bar_index + 2, tTP3, "TP3 " + f_px(tTP3), style = label.style_label_left, color = color.new(C_BULL, 20), textcolor = color.black, size = size.tiny))
-        lvlLbls.push(label.new(bar_index + 2, tTP2, "TP2 " + f_px(tTP2), style = label.style_label_left, color = color.new(C_BULL, 45), textcolor = color.black, size = size.tiny))
-        lvlLbls.push(label.new(bar_index + 2, tTP1, "TP1 " + f_px(tTP1), style = label.style_label_left, color = color.new(C_BULL, 60), textcolor = color.black, size = size.tiny))
-        lvlLbls.push(label.new(bar_index + 2, tEntry, "ENTRY " + f_px(tEntry), style = label.style_label_left, color = color.new(C_TXT, 30), textcolor = color.black, size = size.tiny))
-        lvlLbls.push(label.new(bar_index + 2, tSL, "SL " + f_px(tSL), style = label.style_label_left, color = color.new(C_BEAR, 20), textcolor = color.black, size = size.tiny))
+        lvlLbls.push(f_lvl(bar_index + 2, tTP3, "TP3", color.new(C_BULL, 20)))
+        lvlLbls.push(f_lvl(bar_index + 2, tTP2, "TP2", color.new(C_BULL, 45)))
+        lvlLbls.push(f_lvl(bar_index + 2, tTP1, "TP1", color.new(C_BULL, 60)))
+        lvlLbls.push(f_lvl(bar_index + 2, tEntry, "ENTRY", color.new(C_TXT, 30)))
+        lvlLbls.push(f_lvl(bar_index + 2, tSL, "SL", color.new(C_BEAR, 20)))
+    else if showLines and planPct >= 55
+        color pc = planDir == 1 ? C_BULL : C_BEAR
+        planLns.push(f_pline(planEntry, color.new(C_TXT, 40)))
+        planLns.push(f_pline(planSL, color.new(C_BEAR, 40)))
+        planLns.push(f_pline(planTP1, color.new(C_BULL, 60)))
+        planLns.push(f_pline(planTP2, color.new(C_BULL, 50)))
+        planLns.push(f_pline(planTP3, color.new(C_BULL, 40)))
+        lvlLbls.push(f_lvl(bar_index + 8, planTP3, "خطة TP3", color.new(C_BULL, 50)))
+        lvlLbls.push(f_lvl(bar_index + 8, planTP2, "خطة TP2", color.new(C_BULL, 60)))
+        lvlLbls.push(f_lvl(bar_index + 8, planTP1, "خطة TP1", color.new(C_BULL, 70)))
+        lvlLbls.push(f_lvl(bar_index + 8, planEntry, (planDir == 1 ? "خطة BUY" : "خطة SELL"), color.new(pc, 40)))
+        lvlLbls.push(f_lvl(bar_index + 8, planSL, "خطة SL", color.new(C_BEAR, 50)))
 
 // ═════════════════════════════════════════════════════════════
 // الجدول
 // ═════════════════════════════════════════════════════════════
 tSize = f_size(tblSizeIn)
-var table tb = table.new(f_pos(tblPosIn), 2, 26, bgcolor = C_BG, frame_color = color.new(C_KEY, 60), frame_width = 1, border_color = color.new(C_KEY, 85), border_width = 1)
+var table tb = table.new(f_pos(tblPosIn), 2, 34, bgcolor = C_BG, frame_color = color.new(C_KEY, 60), frame_width = 1, border_color = color.new(C_KEY, 85), border_width = 1)
 
 f_head(int r, string t, color bg) =>
     table.cell(tb, 0, r, t, text_color = C_GOLD, bgcolor = bg, text_size = tSize, text_halign = text.align_center)
@@ -425,46 +499,122 @@ f_row(int r, string k, string v, color vc) =>
     table.cell(tb, 0, r, v, text_color = vc, bgcolor = C_BG, text_size = tSize, text_halign = text.align_left)
 
 if barstate.islast and showTable
-    table.clear(tb, 0, 0, 1, 25)
+    table.clear(tb, 0, 0, 1, 33)
+    int r = 0
 
     // الرأس والتوصية الحالية
-    f_head(0, "قنّاص Pro Scalper  •  " + syminfo.ticker + "  •  " + timeframe.period, C_HEAD)
+    f_head(r, "قنّاص Pro Scalper  •  " + syminfo.ticker + "  •  " + timeframe.period, C_HEAD)
+    r += 1
     string recTxt = buyRaw ? "BUY ▲ شراء" : sellRaw ? "SELL ▼ بيع" : "WAIT ◆ انتظار"
     color  recCol = buyRaw ? C_BULL : sellRaw ? C_BEAR : C_NEU
-    f_row(1, "توصية الشمعة الأخيرة", recTxt + (barstate.isconfirmed or not (buyRaw or sellRaw) ? "" : " ⏳"), recCol)
-    f_row(2, "قوة الشراء", f_bar(bPct) + " " + str.tostring(math.round(bPct)) + "%", C_BULL)
-    f_row(3, "قوة البيع", f_bar(sPct) + " " + str.tostring(math.round(sPct)) + "%", C_BEAR)
+    f_row(r, "توصية الشمعة الأخيرة", recTxt + (barstate.isconfirmed or not (buyRaw or sellRaw) ? "" : " ⏳"), recCol)
+    r += 1
+    f_row(r, "قوة الشراء", f_bar(bPct) + " " + str.tostring(math.round(bPct)) + "%", C_BULL)
+    r += 1
+    f_row(r, "قوة البيع", f_bar(sPct) + " " + str.tostring(math.round(sPct)) + "%", C_BEAR)
+    r += 1
 
-    // تفاصيل آخر صفقة
-    f_head(4, "تفاصيل آخر صفقة", C_SEC)
-    bool has = lDir != 0
-    color dc = lDir == 1 ? C_BULL : C_BEAR
-    f_row(5, "نوع الصفقة", has ? (lDir == 1 ? "BUY ▲ شراء" : "SELL ▼ بيع") + "  •  توافق " + str.tostring(math.round(tScore)) + "%" : "—", has ? dc : C_NEU)
-    f_row(6, "وقت الإشارة", has ? str.format_time(tTime, "yyyy-MM-dd HH:mm", syminfo.timezone) : "—", C_TXT)
-    f_row(7, "نقطة الدخول", has ? f_px(tEntry) : "—", C_TXT)
-    f_row(8, "وقف الخسارة", has ? f_px(tSL0) + "  (" + str.tostring(tRisk / tEntry * 100, "#.##") + "%)" + (tHit1 and moveBE and tDir != 0 ? "  → " + f_px(tSL) : "") : "—", C_BEAR)
-    f_row(9, "الهدف 1", has ? f_px(tTP1) + (tHit1 ? "  ✔" : "") : "—", C_BULL)
-    f_row(10, "الهدف 2", has ? f_px(tTP2) + (tHit2 ? "  ✔" : "") : "—", C_BULL)
-    f_row(11, "الهدف 3", has ? f_px(tTP3) : "—", C_BULL)
-    f_row(12, "العائد إلى المخاطرة", has ? "1 : " + str.tostring(rr1, "#.#") + " / " + str.tostring(rr2, "#.#") + " / " + str.tostring(rr3, "#.#") : "—", C_TXT)
-    f_row(13, "مدة الصفقة", has ? "≈ " + str.tostring(tEstMin) + " دقيقة  •  حد أقصى " + str.tostring(maxHold) : "—", C_GOLD)
-    f_row(14, "حالة الصفقة", tState, tStateC)
+    if tDir != 0
+        // ── الصفقة النشطة
+        color dc   = tDir == 1 ? C_BULL : C_BEAR
+        float curR = (close - tEntry) * tDir / tRisk
+        int   left = math.max(0, int(math.round(maxHold - (bar_index - tBar) * tfMin)))
+        bool  flip = tDir == 1 ? sPct >= minScore : bPct >= minScore
+        string adv = flip ? "تحذير: التوافق انعكس، فكّر بالخروج" : tHit1 ? "احجز نصف الكمية، الوقف على الدخول" : curR < -0.5 ? "الصفقة تحت ضغط، التزم بالوقف" : "استمر حتى الأهداف"
+        f_head(r, "الصفقة النشطة الآن", C_SEC)
+        r += 1
+        f_row(r, "نوع الصفقة", (tDir == 1 ? "BUY ▲ شراء" : "SELL ▼ بيع") + "  •  توافق " + str.tostring(math.round(tScore)) + "%", dc)
+        r += 1
+        f_row(r, "وقت الدخول", str.format_time(tTime, "yyyy-MM-dd HH:mm", syminfo.timezone), C_TXT)
+        r += 1
+        f_row(r, "نقطة الدخول", f_px(tEntry), C_TXT)
+        r += 1
+        f_row(r, "وقف الخسارة", f_px(tSL) + (tHit1 and moveBE ? "  (على الدخول)" : "  (" + str.tostring(tRisk / tEntry * 100, "#.##") + "%)"), C_BEAR)
+        r += 1
+        f_row(r, "الهدف 1", f_px(tTP1) + (tHit1 ? "  ✔" : ""), C_BULL)
+        r += 1
+        f_row(r, "الهدف 2", f_px(tTP2) + (tHit2 ? "  ✔" : ""), C_BULL)
+        r += 1
+        f_row(r, "الهدف 3", f_px(tTP3), C_BULL)
+        r += 1
+        f_row(r, "الربح أو الخسارة الآن", f_signR(curR) + "  •  " + str.tostring((close - tEntry) * tDir / tEntry * 100, "#.##") + "%", curR >= 0 ? C_BULL : C_BEAR)
+        r += 1
+        f_row(r, "الوقت المتبقي", str.tostring(left) + " دقيقة من " + str.tostring(maxHold), C_GOLD)
+        r += 1
+        f_row(r, "الحالة", tState, tStateC)
+        r += 1
+        f_row(r, "التوصية", adv, flip ? C_BEAR : C_GOLD)
+        r += 1
+    else
+        // ── خطة الدخول المقترحة
+        color pc = planDir == 1 ? C_BULL : C_BEAR
+        array<bool> okArr = array.from(planDir == 1 ? bf1 : sf1, planDir == 1 ? bf2 : sf2, planDir == 1 ? bf3 : sf3, planDir == 1 ? bf4 : sf4, planDir == 1 ? bf5 : sf5, planDir == 1 ? bf6 : sf6, planDir == 1 ? bf7 : sf7, planDir == 1 ? bf8 : sf8, planDir == 1 ? bf9 : sf9, planDir == 1 ? bf10 : sf10, planDir == 1 ? bf11 : sf11, planDir == 1 ? bf12 : sf12, planDir == 1 ? bf13 : sf13, planDir == 1 ? bf14 : sf14, adxOk, volatOk, planDir == 1 ? notExtB : notExtS, sessOk)
+        array<string> nmArr = array.from("ترتيب المتوسطات", "EMA200", "فريم " + htf1, "فريم " + htf2, "Supertrend", "VWAP", "RSI", "MACD", "Stoch RSI", "DMI", "الحجم", "هيكل السوق", "شمعة التأكيد", "الزخم", "ADX ضعيف", "تذبذب منخفض", "السعر مندفع", "خارج الجلسة")
+        string missTxt = ""
+        int cnt = 0
+        for i = 0 to okArr.size() - 1
+            if not okArr.get(i)
+                missTxt := missTxt + (cnt == 0 ? "" : cnt % 3 == 0 ? "\n" : "، ") + nmArr.get(i)
+                cnt += 1
+        f_head(r, "خطة الدخول المقترحة الآن", C_SEC)
+        r += 1
+        f_row(r, "الاتجاه المرجّح", (planDir == 1 ? "BUY ▲ شراء" : "SELL ▼ بيع") + "  •  " + str.tostring(math.round(planPct)) + "%", pc)
+        r += 1
+        f_row(r, "تقييم الفرصة", planGrade, planNow ? C_BULL : planPct >= minScore ? C_GOLD : planPct >= 55 ? C_TXT : C_NEU)
+        r += 1
+        f_row(r, "طريقة الدخول", planType, C_TXT)
+        r += 1
+        f_row(r, "نقطة الدخول", f_px(planEntry) + "  (" + (planEntry >= close ? "+" : "") + str.tostring((planEntry - close) / close * 100, "#.##") + "% من السعر)", C_TXT)
+        r += 1
+        f_row(r, "وقف الخسارة", f_px(planSL) + "  (" + str.tostring(planRisk / planEntry * 100, "#.##") + "%)", C_BEAR)
+        r += 1
+        f_row(r, "الهدف 1", f_px(planTP1), C_BULL)
+        r += 1
+        f_row(r, "الهدف 2", f_px(planTP2), C_BULL)
+        r += 1
+        f_row(r, "الهدف 3", f_px(planTP3), C_BULL)
+        r += 1
+        f_row(r, "العائد إلى المخاطرة", "1 : " + str.tostring(rr1, "#.#") + " / " + str.tostring(rr2, "#.#") + " / " + str.tostring(rr3, "#.#"), C_TXT)
+        r += 1
+        f_row(r, "المدة المتوقعة", "≈ " + str.tostring(planEst) + " دقيقة  •  حد أقصى " + str.tostring(maxHold), C_GOLD)
+        r += 1
+        f_row(r, "جاهزية الإشارة", planNow ? "مكتملة ✔ ادخل الآن" : "ينقصها " + str.tostring(math.max(0, math.round(minScore - planPct))) + "% من التوافق", planNow ? C_BULL : C_GOLD)
+        r += 1
+        f_row(r, "عوامل غير متوافقة", cnt == 0 ? "لا يوجد" : missTxt, C_BEAR)
+        r += 1
+        f_row(r, "شرط الإلغاء", "إغلاق شمعة " + (planDir == 1 ? "تحت " : "فوق ") + f_px(planSL) + " أو مرور 3 شموع", C_KEY)
+        r += 1
+
+    // آخر صفقة مغلقة
+    f_row(r, "آخر صفقة مغلقة", lastRes, lastResC)
+    r += 1
 
     // التحليل الفني الحالي
-    f_head(15, "التحليل الفني الآن", C_SEC)
-    f_row(16, "فريم " + htf1 + "  /  فريم " + htf2, f_trendTxt(trend1) + "  /  " + f_trendTxt(trend2), f_trendCol(trend1 + trend2 > 0 ? 1 : trend1 + trend2 < 0 ? -1 : 0))
-    f_row(17, "Supertrend  /  VWAP", (stUp ? "▲ صاعد" : "▼ هابط") + "  /  " + (na(vwap) ? "غير متاح" : aboveVwap ? "السعر فوقه" : "السعر تحته"), stUp ? C_BULL : C_BEAR)
-    f_row(18, "RSI  /  MACD", str.tostring(rsi, "#.0") + "  /  " + (macdH > 0 ? "▲ إيجابي" : "▼ سلبي"), rsi > 50 ? C_BULL : C_BEAR)
-    f_row(19, "ADX  /  الحجم النسبي", str.tostring(adx, "#.0") + (adxOk ? " قوي" : " ضعيف") + "  /  " + (hasVol ? str.tostring(rvol, "#.00") + "x" : "غير متاح"), adxOk ? C_TXT : C_NEU)
-    f_row(20, "هيكل السوق", mktStruct == 1 ? "BOS صاعد" : mktStruct == -1 ? "BOS هابط" : "غير محدد", f_trendCol(mktStruct))
-    f_row(21, "نموذج الشمعة  /  الانضغاط", (bullPat ? bPatName : bearPat ? sPatName : "—") + "  /  " + (sqzFired ? "انفجار الآن" : sqzOn ? "انضغاط" : "حر"), bullPat ? C_BULL : bearPat ? C_BEAR : C_NEU)
+    f_head(r, "التحليل الفني الآن", C_SEC)
+    r += 1
+    f_row(r, "فريم " + htf1 + "  /  فريم " + htf2, f_trendTxt(trend1) + "  /  " + f_trendTxt(trend2), f_trendCol(trend1 + trend2 > 0 ? 1 : trend1 + trend2 < 0 ? -1 : 0))
+    r += 1
+    f_row(r, "Supertrend  /  VWAP", (stUp ? "▲ صاعد" : "▼ هابط") + "  /  " + (na(vwap) ? "غير متاح" : aboveVwap ? "السعر فوقه" : "السعر تحته"), stUp ? C_BULL : C_BEAR)
+    r += 1
+    f_row(r, "RSI  /  MACD", str.tostring(rsi, "#.0") + "  /  " + (macdH > 0 ? "▲ إيجابي" : "▼ سلبي"), rsi > 50 ? C_BULL : C_BEAR)
+    r += 1
+    f_row(r, "ADX  /  الحجم النسبي", str.tostring(adx, "#.0") + (adxOk ? " قوي" : " ضعيف") + "  /  " + (hasVol ? str.tostring(rvol, "#.00") + "x" : "غير متاح"), adxOk ? C_TXT : C_NEU)
+    r += 1
+    f_row(r, "هيكل السوق", mktStruct == 1 ? "BOS صاعد" : mktStruct == -1 ? "BOS هابط" : "غير محدد", f_trendCol(mktStruct))
+    r += 1
+    f_row(r, "نموذج الشمعة  /  الانضغاط", (bullPat ? bPatName : bearPat ? sPatName : "—") + "  /  " + (sqzFired ? "انفجار الآن" : sqzOn ? "انضغاط" : "حر"), bullPat ? C_BULL : bearPat ? C_BEAR : C_NEU)
+    r += 1
 
     // الأداء التاريخي
-    f_head(22, "أداء المؤشر على هذا الرمز والفريم", C_SEC)
+    f_head(r, "أداء المؤشر على هذا الرمز والفريم", C_SEC)
+    r += 1
     float wr = nTot > 0 ? nWin * 100.0 / nTot : na
-    f_row(23, "عدد الصفقات", str.tostring(nTot) + "  •  رابحة " + str.tostring(nWin) + "  •  خاسرة " + str.tostring(nLoss), C_TXT)
-    f_row(24, "نسبة النجاح  /  صافي R", (na(wr) ? "—" : str.tostring(wr, "#.0") + "%") + "  /  " + f_signR(sumR), sumR >= 0 ? C_BULL : C_BEAR)
-    f_row(25, "ملاحظة", tfMin > 5 ? "الفريم كبير على السكالبينج، استخدم 1 إلى 5 دقائق" : "إدارة المخاطرة أهم من الإشارة", tfMin > 5 ? C_GOLD : C_KEY)
+    f_row(r, "عدد الصفقات", str.tostring(nTot) + "  •  رابحة " + str.tostring(nWin) + "  •  خاسرة " + str.tostring(nLoss), C_TXT)
+    r += 1
+    f_row(r, "نسبة النجاح  /  صافي R", (na(wr) ? "—" : str.tostring(wr, "#.0") + "%") + "  /  " + f_signR(sumR), sumR >= 0 ? C_BULL : C_BEAR)
+    r += 1
+    if tfMin > 5
+        f_row(r, "ملاحظة", "الفريم كبير على السكالبينج، استخدم 1 إلى 5 دقائق", C_GOLD)
 
 // ═════════════════════════════════════════════════════════════
 // الرسم على الشارت
