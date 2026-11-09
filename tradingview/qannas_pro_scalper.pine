@@ -1,0 +1,491 @@
+// This source code is subject to the terms of the Mozilla Public License 2.0
+// © Qannas TASI
+//
+// قنّاص Pro Scalper
+// مؤشر سكالبينج متعدد التأكيدات لصفقات من 5 إلى 15 دقيقة.
+// يجمع 14 عاملاً من مدارس التحليل المختلفة في درجة توافق واحدة،
+// ولا يطلق الإشارة إلا بعد إغلاق الشمعة (بدون إعادة رسم).
+// تنبيه: لا يوجد مؤشر يضمن الربح. الجدول يعرض نسبة النجاح الفعلية
+// للمؤشر على الرمز والفريم الحاليين حتى تحكم عليه بالأرقام.
+
+//@version=6
+indicator("Qannas Pro Scalper", shorttitle = "Qannas Scalper", overlay = true, max_labels_count = 500, max_lines_count = 500)
+
+// ═════════════════════════════════════════════════════════════
+// الألوان
+// ═════════════════════════════════════════════════════════════
+const color C_BULL = #00E676
+const color C_BEAR = #FF5252
+const color C_NEU  = #B2B5BE
+const color C_BG   = #0E1117
+const color C_HEAD = #1C2333
+const color C_SEC  = #151B26
+const color C_KEY  = #8C96A8
+const color C_GOLD = #FFD54F
+const color C_TXT  = #E6E9EF
+
+// ═════════════════════════════════════════════════════════════
+// الإعدادات
+// ═════════════════════════════════════════════════════════════
+const string G1 = "① الإشارات"
+minScore  = input.int(70, "الحد الأدنى لقوة التوافق %", minval = 50, maxval = 100, step = 5, group = G1, tooltip = "كلما ارتفع الحد قلّت الإشارات وزادت دقتها")
+minAdx    = input.int(20, "أدنى قيمة ADX لقوة الاتجاه", minval = 5, group = G1)
+rvolMin   = input.float(1.2, "أدنى حجم نسبي", minval = 0.5, step = 0.1, group = G1)
+coolBars  = input.int(5, "شموع الانتظار بين إشارتين", minval = 0, group = G1)
+oneTrade  = input.bool(true, "صفقة واحدة نشطة في نفس الوقت", group = G1)
+maxExtAtr = input.float(2.0, "أقصى ابتعاد عن EMA21 بمضاعف ATR", step = 0.1, group = G1, tooltip = "يمنع الدخول المتأخر بعد اندفاع السعر")
+useSess   = input.bool(false, "حصر الإشارات في جلسة محددة", group = G1)
+sessStr   = input.session("1000-1500", "الجلسة", group = G1)
+sessTz    = input.string("Asia/Riyadh", "المنطقة الزمنية", group = G1)
+
+const string G2 = "② إدارة الصفقة"
+atrLen  = input.int(14, "طول ATR", minval = 1, group = G2)
+slAtr   = input.float(1.2, "أدنى مسافة للوقف بمضاعف ATR", step = 0.1, group = G2)
+maxRisk = input.float(2.0, "أقصى مسافة للوقف بمضاعف ATR", step = 0.1, group = G2)
+swingLb = input.int(5, "عدد الشموع لتحديد القاع أو القمة", minval = 2, group = G2)
+rr1     = input.float(1.0, "الهدف 1 بوحدة R", step = 0.1, group = G2)
+rr2     = input.float(1.6, "الهدف 2 بوحدة R", step = 0.1, group = G2)
+rr3     = input.float(2.5, "الهدف 3 بوحدة R", step = 0.1, group = G2)
+minHold = input.int(5, "أقل مدة للصفقة بالدقائق", minval = 1, group = G2)
+maxHold = input.int(15, "أقصى مدة للصفقة بالدقائق", minval = 1, group = G2, tooltip = "تُغلق الصفقة بسعر السوق عند انتهاء المدة")
+moveBE  = input.bool(true, "نقل الوقف إلى الدخول بعد الهدف 1", group = G2)
+
+const string G3 = "③ تأكيد الفريمات الأعلى"
+htf1 = input.timeframe("15", "فريم التأكيد الأول", group = G3)
+htf2 = input.timeframe("60", "فريم التأكيد الثاني", group = G3)
+
+const string G4 = "④ العرض"
+showEma   = input.bool(true, "المتوسطات المتحركة", group = G4)
+showVwap  = input.bool(true, "VWAP", group = G4)
+showSt    = input.bool(true, "Supertrend", group = G4)
+showLines = input.bool(true, "خطوط الدخول والوقف والأهداف", group = G4)
+showExits = input.bool(true, "نتيجة كل صفقة على الشارت", group = G4)
+showLive  = input.bool(true, "حالة الشمعة الأخيرة", group = G4)
+showTable = input.bool(true, "جدول الصفقة والتحليل", group = G4)
+paintBars = input.bool(false, "تلوين الشموع حسب التوافق", group = G4)
+lblPlace  = input.string("أعلى الشمعة", "موضع BUY و SELL", options = ["أعلى الشمعة", "BUY أسفل و SELL أعلى"], group = G4)
+tblPosIn  = input.string("أعلى يمين", "موضع الجدول", options = ["أعلى يمين", "أعلى يسار", "أسفل يمين", "أسفل يسار", "وسط يمين"], group = G4)
+tblSizeIn = input.string("صغير", "حجم خط الجدول", options = ["صغير جداً", "صغير", "عادي"], group = G4)
+
+// ═════════════════════════════════════════════════════════════
+// دوال مساعدة
+// ═════════════════════════════════════════════════════════════
+f_pos(string s) =>
+    switch s
+        "أعلى يسار" => position.top_left
+        "أسفل يمين" => position.bottom_right
+        "أسفل يسار" => position.bottom_left
+        "وسط يمين"  => position.middle_right
+        => position.top_right
+
+f_size(string s) =>
+    switch s
+        "صغير جداً" => size.tiny
+        "عادي"      => size.normal
+        => size.small
+
+f_px(float v) =>
+    na(v) ? "—" : str.tostring(v, format.mintick)
+
+f_bar(float p) =>
+    int n = math.max(0, math.min(10, int(math.round(nz(p) / 10))))
+    str.repeat("█", n) + str.repeat("░", 10 - n)
+
+f_trendTxt(int t) =>
+    t == 1 ? "▲ صاعد" : t == -1 ? "▼ هابط" : "◆ محايد"
+
+f_trendCol(int t) =>
+    t == 1 ? C_BULL : t == -1 ? C_BEAR : C_NEU
+
+f_signR(float r) =>
+    (r >= 0 ? "+" : "") + str.tostring(r, "#.##") + "R"
+
+// اتجاه الفريم الأعلى بدون إعادة رسم: قيم الشمعة المغلقة فقط
+htfTrend(simple string tf) =>
+    [c, e1, e2] = request.security(syminfo.tickerid, tf, [close[1], ta.ema(close, 21)[1], ta.ema(close, 50)[1]], lookahead = barmerge.lookahead_on)
+    c > e1 and e1 > e2 ? 1 : c < e1 and e1 < e2 ? -1 : 0
+
+// ═════════════════════════════════════════════════════════════
+// المؤشرات الأساسية
+// ═════════════════════════════════════════════════════════════
+float tfMin  = timeframe.in_seconds() / 60.0
+float atr    = ta.atr(atrLen)
+float atrAvg = ta.sma(atr, 50)
+
+float ema9   = ta.ema(close, 9)
+float ema21  = ta.ema(close, 21)
+float ema50  = ta.ema(close, 50)
+float ema200 = ta.ema(close, 200)
+float vwap   = ta.vwap(hlc3)
+
+[stLine, stDir] = ta.supertrend(3.0, 10)
+bool stUp = stDir < 0
+
+float rsi = ta.rsi(close, 14)
+[macdL, macdS, macdH] = ta.macd(close, 12, 26, 9)
+float stK = ta.sma(ta.stoch(rsi, rsi, rsi, 14), 3)
+float stD = ta.sma(stK, 3)
+[diP, diM, adx] = ta.dmi(14, 14)
+
+float volSma = ta.sma(volume, 20)
+bool  hasVol = nz(volSma) > 0
+float rvol   = hasVol ? nz(volume) / volSma : 1.0
+
+int trend1 = htfTrend(htf1)
+int trend2 = htfTrend(htf2)
+
+float swLow  = ta.lowest(low, swingLb)
+float swHigh = ta.highest(high, swingLb)
+
+// ── هيكل السوق: كسر القمم والقيعان وسحب السيولة
+float ph = ta.pivothigh(high, 3, 3)
+float pl = ta.pivotlow(low, 3, 3)
+var float lastPH = na
+var float lastPL = na
+if not na(ph)
+    lastPH := ph
+if not na(pl)
+    lastPL := pl
+bool xUpPH = ta.crossover(close, lastPH)
+bool xDnPL = ta.crossunder(close, lastPL)
+var int mktStruct = 0
+if xUpPH
+    mktStruct := 1
+if xDnPL
+    mktStruct := -1
+bool bullSweep = not na(lastPL) and low < lastPL and close > lastPL
+bool bearSweep = not na(lastPH) and high > lastPH and close < lastPH
+
+// ── الانضغاط والزخم
+float bbBasis = ta.sma(close, 20)
+float bbDev   = 2.0 * ta.stdev(close, 20)
+float kcRng   = ta.sma(ta.tr(true), 20)
+bool  sqzOn   = bbDev < 1.5 * kcRng
+bool  sqzFired = sqzOn[1] and not sqzOn
+float mom = ta.linreg(close - math.avg(math.avg(ta.highest(high, 20), ta.lowest(low, 20)), bbBasis), 20, 0)
+
+// ── نماذج الشموع
+float body = math.abs(close - open)
+float rng  = high - low
+float upW  = high - math.max(close, open)
+float loW  = math.min(close, open) - low
+bool bullEng    = close > open and close[1] < open[1] and close >= open[1] and open <= close[1] and body > body[1]
+bool bearEng    = close < open and close[1] > open[1] and close <= open[1] and open >= close[1] and body > body[1]
+bool hammer     = rng > 0 and loW >= 2 * body and upW <= 0.6 * body + 0.05 * rng
+bool shootStar  = rng > 0 and upW >= 2 * body and loW <= 0.6 * body + 0.05 * rng
+bool strongBull = close > open and body >= 0.6 * rng and body > 0.5 * atr
+bool strongBear = close < open and body >= 0.6 * rng and body > 0.5 * atr
+bool bullPat = bullSweep or bullEng or hammer or strongBull
+bool bearPat = bearSweep or bearEng or shootStar or strongBear
+string bPatName = bullSweep ? "سحب سيولة صاعد" : bullEng ? "ابتلاع شرائي" : hammer ? "مطرقة" : strongBull ? "شمعة دفع شرائية" : "—"
+string sPatName = bearSweep ? "سحب سيولة هابط" : bearEng ? "ابتلاع بيعي" : shootStar ? "شهاب" : strongBear ? "شمعة دفع بيعية" : "—"
+
+bool aboveVwap = na(vwap) ? close > ema50 : close > vwap
+bool belowVwap = na(vwap) ? close < ema50 : close < vwap
+
+// ═════════════════════════════════════════════════════════════
+// درجة التوافق: 14 عاملاً بإجمالي 18 نقطة
+// ═════════════════════════════════════════════════════════════
+const int MAXS = 18
+
+int bS = 0
+bS += (ema9 > ema21 and ema21 > ema50) ? 2 : 0                       // ترتيب المتوسطات
+bS += close > ema200 ? 1 : 0                                         // الاتجاه العام
+bS += trend1 == 1 ? 2 : 0                                            // الفريم الأعلى 1
+bS += trend2 == 1 ? 1 : 0                                            // الفريم الأعلى 2
+bS += stUp ? 2 : 0                                                   // Supertrend
+bS += aboveVwap ? 1 : 0                                              // VWAP
+bS += (rsi > 50 and rsi < 75) ? 1 : 0                                // RSI
+bS += (macdH > 0 and macdH > macdH[1]) ? 1 : 0                       // MACD
+bS += (stK > stD and stK < 85) ? 1 : 0                               // Stoch RSI
+bS += (adx >= minAdx and diP > diM) ? 2 : 0                          // ADX و DMI
+bS += (hasVol ? rvol >= rvolMin and close > open : close > open) ? 1 : 0 // الحجم
+bS += mktStruct == 1 ? 1 : 0                                         // هيكل السوق
+bS += bullPat ? 1 : 0                                                // نموذج الشمعة
+bS += (mom > 0 and mom > mom[1]) ? 1 : 0                             // الزخم
+
+int sS = 0
+sS += (ema9 < ema21 and ema21 < ema50) ? 2 : 0
+sS += close < ema200 ? 1 : 0
+sS += trend1 == -1 ? 2 : 0
+sS += trend2 == -1 ? 1 : 0
+sS += not stUp ? 2 : 0
+sS += belowVwap ? 1 : 0
+sS += (rsi < 50 and rsi > 25) ? 1 : 0
+sS += (macdH < 0 and macdH < macdH[1]) ? 1 : 0
+sS += (stK < stD and stK > 15) ? 1 : 0
+sS += (adx >= minAdx and diM > diP) ? 2 : 0
+sS += (hasVol ? rvol >= rvolMin and close < open : close < open) ? 1 : 0
+sS += mktStruct == -1 ? 1 : 0
+sS += bearPat ? 1 : 0
+sS += (mom < 0 and mom < mom[1]) ? 1 : 0
+
+float bPct = bS * 100.0 / MAXS
+float sPct = sS * 100.0 / MAXS
+
+// ═════════════════════════════════════════════════════════════
+// فلاتر الأمان
+// ═════════════════════════════════════════════════════════════
+int  sessT   = time(timeframe.period, sessStr, sessTz)
+bool sessOk  = not useSess or not na(sessT)
+bool volatOk = atr > nz(atrAvg, atr) * 0.6
+bool adxOk   = adx >= minAdx
+bool notExtB = (close - ema21) <= maxExtAtr * atr
+bool notExtS = (ema21 - close) <= maxExtAtr * atr
+
+bool buyRaw  = bPct >= minScore and bPct > sPct and close > open and close > ema21 and adxOk and volatOk and sessOk and notExtB
+bool sellRaw = sPct >= minScore and sPct > bPct and close < open and close < ema21 and adxOk and volatOk and sessOk and notExtS
+
+// ═════════════════════════════════════════════════════════════
+// حالة الصفقة والإحصائيات
+// ═════════════════════════════════════════════════════════════
+var int    tDir    = 0
+var int    lDir    = 0
+var float  tEntry  = na
+var float  tSL     = na
+var float  tSL0    = na
+var float  tTP1    = na
+var float  tTP2    = na
+var float  tTP3    = na
+var float  tRisk   = na
+var int    tBar    = na
+var int    tTime   = na
+var float  tScore  = na
+var int    tEstMin = na
+var bool   tHit1   = false
+var bool   tHit2   = false
+var string tState  = "لا توجد صفقة بعد"
+var color  tStateC = C_NEU
+var int    nTot    = 0
+var int    nWin    = 0
+var int    nLoss   = 0
+var float  sumR    = 0.0
+var int    lastSigBar = -100000
+
+var line lE  = na
+var line lSL = na
+var line lT1 = na
+var line lT2 = na
+var line lT3 = na
+
+int maxBars = math.max(1, int(math.ceil(maxHold / tfMin)))
+
+// ── متابعة الصفقة المفتوحة
+if tDir != 0 and bar_index > tBar
+    bool   done   = false
+    float  exitPx = na
+    string why    = ""
+    if tDir == 1
+        if low <= tSL
+            done   := true
+            exitPx := tSL
+            why    := tHit1 ? "خروج على الدخول بعد الهدف 1" : "ضرب وقف الخسارة"
+        else
+            if not tHit1 and high >= tTP1
+                tHit1 := true
+                if moveBE
+                    tSL := tEntry
+            if not tHit2 and high >= tTP2
+                tHit2 := true
+            if high >= tTP3
+                done   := true
+                exitPx := tTP3
+                why    := "تحقق الهدف 3"
+    else
+        if high >= tSL
+            done   := true
+            exitPx := tSL
+            why    := tHit1 ? "خروج على الدخول بعد الهدف 1" : "ضرب وقف الخسارة"
+        else
+            if not tHit1 and low <= tTP1
+                tHit1 := true
+                if moveBE
+                    tSL := tEntry
+            if not tHit2 and low <= tTP2
+                tHit2 := true
+            if low <= tTP3
+                done   := true
+                exitPx := tTP3
+                why    := "تحقق الهدف 3"
+    if not done and bar_index - tBar >= maxBars
+        done   := true
+        exitPx := close
+        why    := "انتهاء مدة الصفقة"
+
+    if showLines and not na(lE)
+        line.set_x2(lE, bar_index)
+        line.set_x2(lSL, bar_index)
+        line.set_x2(lT1, bar_index)
+        line.set_x2(lT2, bar_index)
+        line.set_x2(lT3, bar_index)
+
+    if done
+        // نصف الكمية تُغلق عند الهدف 1، والنصف الآخر عند الخروج النهائي
+        float exitR  = (exitPx - tEntry) * tDir / tRisk
+        float finalR = tHit1 ? 0.5 * rr1 + 0.5 * exitR : exitR
+        nTot += 1
+        if finalR > 0
+            nWin += 1
+        else if finalR < 0
+            nLoss += 1
+        sumR += finalR
+        tState  := "مغلقة: " + why + " (" + f_signR(finalR) + ")"
+        tStateC := finalR > 0 ? C_BULL : finalR < 0 ? C_BEAR : C_NEU
+        if showExits
+            label.new(bar_index, low, (finalR > 0 ? "✔ " : finalR < 0 ? "✖ " : "■ ") + f_signR(finalR), yloc = yloc.belowbar, style = label.style_label_up, color = color.new(tStateC, 75), textcolor = tStateC, size = size.tiny, tooltip = why)
+        tDir := 0
+    else
+        tState  := tHit2 ? "نشطة: تحقق الهدف 2" : tHit1 ? "نشطة: تحقق الهدف 1" : "نشطة"
+        tStateC := tHit1 ? C_BULL : C_GOLD
+
+// ── الإشارات الجديدة (بعد إغلاق الشمعة فقط)
+bool canSig  = bar_index - lastSigBar > coolBars and (not oneTrade or tDir == 0)
+bool buySig  = barstate.isconfirmed and buyRaw and canSig
+bool sellSig = barstate.isconfirmed and sellRaw and canSig and not buySig
+
+if buySig or sellSig
+    int   d     = buySig ? 1 : -1
+    float entry = close
+    float sl    = d == 1 ? math.min(swLow - 0.1 * atr, entry - slAtr * atr) : math.max(swHigh + 0.1 * atr, entry + slAtr * atr)
+    sl := d == 1 ? math.max(sl, entry - maxRisk * atr) : math.min(sl, entry + maxRisk * atr)
+    float risk = math.max(math.abs(entry - sl), syminfo.mintick)
+
+    tDir    := d
+    lDir    := d
+    tEntry  := entry
+    tSL     := sl
+    tSL0    := sl
+    tRisk   := risk
+    tTP1    := entry + d * rr1 * risk
+    tTP2    := entry + d * rr2 * risk
+    tTP3    := entry + d * rr3 * risk
+    tBar    := bar_index
+    tTime   := time_close
+    tScore  := d == 1 ? bPct : sPct
+    tHit1   := false
+    tHit2   := false
+    tState  := "نشطة"
+    tStateC := C_GOLD
+    lastSigBar := bar_index
+
+    // تقدير المدة: عدد الشموع اللازمة لقطع مسافة الهدف 1 بمتوسط حركة الشمعة
+    int estBars = math.max(1, int(math.round(rr1 * risk / math.max(0.6 * atr, syminfo.mintick))))
+    tEstMin := math.max(minHold, math.min(maxHold, int(math.round(estBars * tfMin))))
+
+    color  c   = d == 1 ? C_BULL : C_BEAR
+    string tip = (d == 1 ? "شراء" : "بيع") + "\nالدخول: " + f_px(entry) + "\nالوقف: " + f_px(sl) + "\nالهدف 1: " + f_px(tTP1) + "\nالهدف 2: " + f_px(tTP2) + "\nالهدف 3: " + f_px(tTP3) + "\nالمدة: ≈ " + str.tostring(tEstMin) + " دقيقة"
+    bool   up  = lblPlace == "أعلى الشمعة" or d == -1
+    label.new(bar_index, up ? high : low, (d == 1 ? "BUY" : "SELL") + "\n" + str.tostring(math.round(tScore)) + "%", yloc = up ? yloc.abovebar : yloc.belowbar, style = up ? label.style_label_down : label.style_label_up, color = c, textcolor = color.black, size = size.small, tooltip = tip)
+
+    if showLines
+        lE  := line.new(bar_index, entry, bar_index + 1, entry, color = color.new(C_TXT, 20), style = line.style_dashed)
+        lSL := line.new(bar_index, sl, bar_index + 1, sl, color = C_BEAR, width = 2)
+        lT1 := line.new(bar_index, tTP1, bar_index + 1, tTP1, color = color.new(C_BULL, 40), style = line.style_dotted)
+        lT2 := line.new(bar_index, tTP2, bar_index + 1, tTP2, color = color.new(C_BULL, 20), style = line.style_dotted)
+        lT3 := line.new(bar_index, tTP3, bar_index + 1, tTP3, color = C_BULL, width = 2)
+
+// ═════════════════════════════════════════════════════════════
+// حالة الشمعة الأخيرة وأسعار الصفقة النشطة
+// ═════════════════════════════════════════════════════════════
+var label liveLbl = na
+var array<label> lvlLbls = array.new<label>()
+
+if barstate.islast
+    label.delete(liveLbl)
+    for l in lvlLbls
+        label.delete(l)
+    lvlLbls.clear()
+
+    if showLive and not buySig and not sellSig
+        string lt  = buyRaw ? "BUY" : sellRaw ? "SELL" : "WAIT"
+        float  lp  = buyRaw ? bPct : sellRaw ? sPct : math.max(bPct, sPct)
+        color  lc  = buyRaw ? C_BULL : sellRaw ? C_BEAR : color.new(C_NEU, 30)
+        string sub = barstate.isconfirmed ? "" : (buyRaw or sellRaw ? "\n⏳ بانتظار إغلاق الشمعة" : "")
+        liveLbl := label.new(bar_index, high + 0.8 * atr, lt + " " + str.tostring(math.round(lp)) + "%" + sub, style = label.style_label_down, color = lc, textcolor = color.black, size = size.normal)
+
+    if showLines and tDir != 0
+        lvlLbls.push(label.new(bar_index + 2, tTP3, "TP3 " + f_px(tTP3), style = label.style_label_left, color = color.new(C_BULL, 20), textcolor = color.black, size = size.tiny))
+        lvlLbls.push(label.new(bar_index + 2, tTP2, "TP2 " + f_px(tTP2), style = label.style_label_left, color = color.new(C_BULL, 45), textcolor = color.black, size = size.tiny))
+        lvlLbls.push(label.new(bar_index + 2, tTP1, "TP1 " + f_px(tTP1), style = label.style_label_left, color = color.new(C_BULL, 60), textcolor = color.black, size = size.tiny))
+        lvlLbls.push(label.new(bar_index + 2, tEntry, "ENTRY " + f_px(tEntry), style = label.style_label_left, color = color.new(C_TXT, 30), textcolor = color.black, size = size.tiny))
+        lvlLbls.push(label.new(bar_index + 2, tSL, "SL " + f_px(tSL), style = label.style_label_left, color = color.new(C_BEAR, 20), textcolor = color.black, size = size.tiny))
+
+// ═════════════════════════════════════════════════════════════
+// الجدول
+// ═════════════════════════════════════════════════════════════
+tSize = f_size(tblSizeIn)
+var table tb = table.new(f_pos(tblPosIn), 2, 26, bgcolor = C_BG, frame_color = color.new(C_KEY, 60), frame_width = 1, border_color = color.new(C_KEY, 85), border_width = 1)
+
+f_head(int r, string t, color bg) =>
+    table.cell(tb, 0, r, t, text_color = C_GOLD, bgcolor = bg, text_size = tSize, text_halign = text.align_center)
+    table.merge_cells(tb, 0, r, 1, r)
+
+f_row(int r, string k, string v, color vc) =>
+    table.cell(tb, 1, r, k, text_color = C_KEY, bgcolor = C_BG, text_size = tSize, text_halign = text.align_right)
+    table.cell(tb, 0, r, v, text_color = vc, bgcolor = C_BG, text_size = tSize, text_halign = text.align_left)
+
+if barstate.islast and showTable
+    table.clear(tb, 0, 0, 1, 25)
+
+    // الرأس والتوصية الحالية
+    f_head(0, "قنّاص Pro Scalper  •  " + syminfo.ticker + "  •  " + timeframe.period, C_HEAD)
+    string recTxt = buyRaw ? "BUY ▲ شراء" : sellRaw ? "SELL ▼ بيع" : "WAIT ◆ انتظار"
+    color  recCol = buyRaw ? C_BULL : sellRaw ? C_BEAR : C_NEU
+    f_row(1, "توصية الشمعة الأخيرة", recTxt + (barstate.isconfirmed or not (buyRaw or sellRaw) ? "" : " ⏳"), recCol)
+    f_row(2, "قوة الشراء", f_bar(bPct) + " " + str.tostring(math.round(bPct)) + "%", C_BULL)
+    f_row(3, "قوة البيع", f_bar(sPct) + " " + str.tostring(math.round(sPct)) + "%", C_BEAR)
+
+    // تفاصيل آخر صفقة
+    f_head(4, "تفاصيل آخر صفقة", C_SEC)
+    bool has = lDir != 0
+    color dc = lDir == 1 ? C_BULL : C_BEAR
+    f_row(5, "نوع الصفقة", has ? (lDir == 1 ? "BUY ▲ شراء" : "SELL ▼ بيع") + "  •  توافق " + str.tostring(math.round(tScore)) + "%" : "—", has ? dc : C_NEU)
+    f_row(6, "وقت الإشارة", has ? str.format_time(tTime, "yyyy-MM-dd HH:mm", syminfo.timezone) : "—", C_TXT)
+    f_row(7, "نقطة الدخول", has ? f_px(tEntry) : "—", C_TXT)
+    f_row(8, "وقف الخسارة", has ? f_px(tSL0) + "  (" + str.tostring(tRisk / tEntry * 100, "#.##") + "%)" + (tHit1 and moveBE and tDir != 0 ? "  → " + f_px(tSL) : "") : "—", C_BEAR)
+    f_row(9, "الهدف 1", has ? f_px(tTP1) + (tHit1 ? "  ✔" : "") : "—", C_BULL)
+    f_row(10, "الهدف 2", has ? f_px(tTP2) + (tHit2 ? "  ✔" : "") : "—", C_BULL)
+    f_row(11, "الهدف 3", has ? f_px(tTP3) : "—", C_BULL)
+    f_row(12, "العائد إلى المخاطرة", has ? "1 : " + str.tostring(rr1, "#.#") + " / " + str.tostring(rr2, "#.#") + " / " + str.tostring(rr3, "#.#") : "—", C_TXT)
+    f_row(13, "مدة الصفقة", has ? "≈ " + str.tostring(tEstMin) + " دقيقة  •  حد أقصى " + str.tostring(maxHold) : "—", C_GOLD)
+    f_row(14, "حالة الصفقة", tState, tStateC)
+
+    // التحليل الفني الحالي
+    f_head(15, "التحليل الفني الآن", C_SEC)
+    f_row(16, "فريم " + htf1 + "  /  فريم " + htf2, f_trendTxt(trend1) + "  /  " + f_trendTxt(trend2), f_trendCol(trend1 + trend2 > 0 ? 1 : trend1 + trend2 < 0 ? -1 : 0))
+    f_row(17, "Supertrend  /  VWAP", (stUp ? "▲ صاعد" : "▼ هابط") + "  /  " + (na(vwap) ? "غير متاح" : aboveVwap ? "السعر فوقه" : "السعر تحته"), stUp ? C_BULL : C_BEAR)
+    f_row(18, "RSI  /  MACD", str.tostring(rsi, "#.0") + "  /  " + (macdH > 0 ? "▲ إيجابي" : "▼ سلبي"), rsi > 50 ? C_BULL : C_BEAR)
+    f_row(19, "ADX  /  الحجم النسبي", str.tostring(adx, "#.0") + (adxOk ? " قوي" : " ضعيف") + "  /  " + (hasVol ? str.tostring(rvol, "#.00") + "x" : "غير متاح"), adxOk ? C_TXT : C_NEU)
+    f_row(20, "هيكل السوق", mktStruct == 1 ? "BOS صاعد" : mktStruct == -1 ? "BOS هابط" : "غير محدد", f_trendCol(mktStruct))
+    f_row(21, "نموذج الشمعة  /  الانضغاط", (bullPat ? bPatName : bearPat ? sPatName : "—") + "  /  " + (sqzFired ? "انفجار الآن" : sqzOn ? "انضغاط" : "حر"), bullPat ? C_BULL : bearPat ? C_BEAR : C_NEU)
+
+    // الأداء التاريخي
+    f_head(22, "أداء المؤشر على هذا الرمز والفريم", C_SEC)
+    float wr = nTot > 0 ? nWin * 100.0 / nTot : na
+    f_row(23, "عدد الصفقات", str.tostring(nTot) + "  •  رابحة " + str.tostring(nWin) + "  •  خاسرة " + str.tostring(nLoss), C_TXT)
+    f_row(24, "نسبة النجاح  /  صافي R", (na(wr) ? "—" : str.tostring(wr, "#.0") + "%") + "  /  " + f_signR(sumR), sumR >= 0 ? C_BULL : C_BEAR)
+    f_row(25, "ملاحظة", tfMin > 5 ? "الفريم كبير على السكالبينج، استخدم 1 إلى 5 دقائق" : "إدارة المخاطرة أهم من الإشارة", tfMin > 5 ? C_GOLD : C_KEY)
+
+// ═════════════════════════════════════════════════════════════
+// الرسم على الشارت
+// ═════════════════════════════════════════════════════════════
+plot(showEma ? ema9 : na, "EMA 9", color = color.new(#29B6F6, 10))
+plot(showEma ? ema21 : na, "EMA 21", color = color.new(#FFA726, 10))
+plot(showEma ? ema50 : na, "EMA 50", color = color.new(#AB47BC, 10))
+plot(showEma ? ema200 : na, "EMA 200", color = color.new(color.white, 30), linewidth = 2)
+plot(showVwap ? vwap : na, "VWAP", color = color.new(#FFEB3B, 20), style = plot.style_linebr)
+plot(showSt ? stLine : na, "Supertrend", color = stUp ? color.new(C_BULL, 35) : color.new(C_BEAR, 35), style = plot.style_linebr, linewidth = 2)
+
+barcolor(paintBars and bPct >= minScore ? C_BULL : paintBars and sPct >= minScore ? C_BEAR : color(na))
+
+plot(bPct, "قوة الشراء %", display = display.data_window)
+plot(sPct, "قوة البيع %", display = display.data_window)
+
+// ═════════════════════════════════════════════════════════════
+// التنبيهات
+// ═════════════════════════════════════════════════════════════
+alertcondition(buySig, "Qannas BUY", "BUY {{ticker}} {{interval}} @ {{close}}")
+alertcondition(sellSig, "Qannas SELL", "SELL {{ticker}} {{interval}} @ {{close}}")
+
+if buySig or sellSig
+    alert((buySig ? "BUY " : "SELL ") + syminfo.ticker + " | الدخول " + f_px(tEntry) + " | الوقف " + f_px(tSL) + " | TP1 " + f_px(tTP1) + " | TP2 " + f_px(tTP2) + " | TP3 " + f_px(tTP3) + " | المدة ≈ " + str.tostring(tEstMin) + " د | التوافق " + str.tostring(math.round(tScore)) + "%", alert.freq_once_per_bar_close)
