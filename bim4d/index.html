@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>منصة البناء الرقمي 4D</title>
+  <link rel="stylesheet" href="css/style.css">
+  <script src="vendor/xlsx.full.min.js"></script>
+  <script type="importmap">
+    { "imports": { "three": "./vendor/three.module.js", "three/addons/": "./vendor/addons/" } }
+  </script>
+</head>
+<body>
+<header class="top">
+  <div class="brand">
+    <span class="logo">4D</span>
+    <div>
+      <h1>منصة البناء الرقمي</h1>
+      <small>من جدول الكميات والنموذج إلى برنامج زمني ومحاكاة رباعية الأبعاد</small>
+    </div>
+  </div>
+  <div class="top-actions">
+    <input id="projName" class="pname" placeholder="اسم المشروع">
+    <button class="ghost" id="btnSave" title="حفظ ملف المشروع">حفظ</button>
+    <label class="ghost btnlike" title="فتح ملف مشروع">فتح<input type="file" id="fileProject" accept=".json" hidden></label>
+  </div>
+</header>
+
+<nav class="tabs" id="tabs">
+  <button data-tab="setup" class="on">١ المشروع والملفات</button>
+  <button data-tab="boq">٢ جدول الكميات</button>
+  <button data-tab="rates">٣ الإنتاجية والمدد</button>
+  <button data-tab="gantt">٤ البرنامج الزمني</button>
+  <button data-tab="sim">٥ المحاكاة 4D</button>
+  <button data-tab="track">٦ متابعة الإنجاز والتقارير</button>
+</nav>
+
+<main>
+  <!-- ١ المشروع -->
+  <section id="tab-setup" class="tab on">
+    <div class="cols">
+      <div class="card">
+        <h2>بيانات المشروع</h2>
+        <div class="form">
+          <label>تاريخ البدء<input type="date" id="startDate"></label>
+          <label>عدد الأدوار فوق الأرض<input type="number" id="floors" min="1" max="40" value="3"></label>
+          <label>العطلة الأسبوعية
+            <select id="weekend">
+              <option value="5">الجمعة</option>
+              <option value="5,6">الجمعة والسبت</option>
+              <option value="6,0">السبت والأحد</option>
+              <option value="">بدون عطلة</option>
+            </select>
+          </label>
+          <label class="wide">الإجازات الرسمية (سطر لكل فترة)
+            <textarea id="holidays" rows="3" placeholder="2027-03-08 .. 2027-03-14&#10;2027-09-23"></textarea>
+          </label>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>جدول الكميات</h2>
+        <p class="muted">ملف Excel أو CSV يحتوي أعمدة: رقم البند، الوصف، الوحدة، الكمية، سعر الوحدة. المنصة تتعرف على العناوين بالعربية أو الإنجليزية.</p>
+        <div class="drop" id="dropBoq">
+          <input type="file" id="fileBoq" accept=".xlsx,.xls,.csv">
+          <span>اسحب ملف جدول الكميات هنا أو اضغط للاختيار</span>
+        </div>
+        <div class="row">
+          <button class="ghost" id="btnSample">تحميل مشروع تجريبي</button>
+          <button class="ghost" id="btnTemplate">تنزيل قالب جدول الكميات</button>
+        </div>
+        <div id="boqStatus" class="status"></div>
+      </div>
+
+      <div class="card">
+        <h2>المخططات والنموذج</h2>
+        <div class="seg" id="modelSrc">
+          <button data-src="parametric" class="on">نموذج تلقائي من الأبعاد</button>
+          <button data-src="ifc">نموذج BIM بصيغة IFC</button>
+        </div>
+        <div id="srcParametric" class="form">
+          <label>طول المبنى (م)<input type="number" id="bL" value="30" step="0.5"></label>
+          <label>عرض المبنى (م)<input type="number" id="bW" value="20" step="0.5"></label>
+          <label>ارتفاع الدور (م)<input type="number" id="bH" value="3.5" step="0.1"></label>
+          <label>عدد البحور طوليًا<input type="number" id="bNx" value="5" min="1" max="20"></label>
+          <label>عدد البحور عرضيًا<input type="number" id="bNz" value="4" min="1" max="20"></label>
+        </div>
+        <div id="srcIfc" class="hidden">
+          <p class="muted">صدّر النموذج من Revit أو ArchiCAD أو Tekla بصيغة IFC. ملفات DWG وPDF تُحوَّل أولًا إلى نموذج IFC، أو استخدم النموذج التلقائي.</p>
+          <div class="drop" id="dropIfc">
+            <input type="file" id="fileIfc" accept=".ifc">
+            <span>اسحب ملف IFC هنا أو اضغط للاختيار</span>
+          </div>
+          <div id="ifcStatus" class="status"></div>
+        </div>
+      </div>
+    </div>
+    <div class="cta">
+      <button id="btnGenerate" class="primary big">توليد البرنامج الزمني والمحاكاة</button>
+      <div id="genStatus" class="status"></div>
+    </div>
+  </section>
+
+  <!-- ٢ جدول الكميات -->
+  <section id="tab-boq" class="tab">
+    <div class="card">
+      <div class="bar-head">
+        <h2>بنود جدول الكميات وربطها بالأنشطة</h2>
+        <div class="row">
+          <input id="boqFilter" placeholder="بحث في البنود" class="search">
+          <button class="primary" id="btnRegen1">تحديث البرنامج</button>
+        </div>
+      </div>
+      <p class="muted">صُنّف كل بند تلقائيًا إلى نشاط ومستوى. عدّل التصنيف عند الحاجة. البنود بدون دور محدد تُوزّع على الأدوار بالتساوي.</p>
+      <div id="boqSummary" class="chips"></div>
+      <div class="scroll"><table class="grid" id="boqTable"></table></div>
+    </div>
+  </section>
+
+  <!-- ٣ الإنتاجية -->
+  <section id="tab-rates" class="tab">
+    <div class="cols two">
+      <div class="card">
+        <div class="bar-head"><h2>معدلات الإنتاجية والطواقم</h2><button class="primary" id="btnRegen2">تحديث البرنامج</button></div>
+        <p class="muted">الإنتاجية اليومية لطاقم واحد. المدة = الكمية ÷ (الإنتاجية × عدد الطواقم).</p>
+        <div class="scroll"><table class="grid" id="ratesTable"></table></div>
+      </div>
+      <div class="card">
+        <h2>مدد الأنشطة</h2>
+        <p class="muted">اكتب مدة يدوية لتجاوز المدة المحسوبة، واتركها فارغة للعودة للحساب التلقائي.</p>
+        <div class="scroll"><table class="grid" id="durTable"></table></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ٤ البرنامج الزمني -->
+  <section id="tab-gantt" class="tab">
+    <div class="card">
+      <div class="bar-head">
+        <h2>البرنامج الزمني</h2>
+        <div class="row">
+          <div class="seg" id="zoom">
+            <button data-z="14">يوم</button><button data-z="5" class="on">أسبوع</button><button data-z="1.6">شهر</button>
+          </div>
+          <label class="chk"><input type="checkbox" id="showLinks" checked> العلاقات</label>
+          <button class="ghost" id="btnMsp">تصدير MS Project / Primavera</button>
+          <button class="ghost" id="btnXlsx">تصدير Excel</button>
+        </div>
+      </div>
+      <div id="kpiSched" class="kpis"></div>
+      <div id="gantt" class="gantt"></div>
+    </div>
+  </section>
+
+  <!-- ٥ المحاكاة -->
+  <section id="tab-sim" class="tab">
+    <div class="sim">
+      <div class="viewer-wrap">
+        <div id="viewer" class="viewer"></div>
+        <div class="overlay" id="simOverlay"></div>
+        <div class="legend">
+          <span><i style="background:#2ecc71"></i>قيد التنفيذ</span>
+          <span><i style="background:#90a4ae;opacity:.4"></i>لم يبدأ</span>
+          <span><i style="background:#e53935"></i>متأخر</span>
+          <span><i style="background:#b0bec5"></i>منجز</span>
+        </div>
+      </div>
+      <aside class="card side">
+        <h2>المحاكاة</h2>
+        <div class="seg" id="simMode">
+          <button data-m="plan" class="on">الخطة</button>
+          <button data-m="actual">الوضع الفعلي</button>
+        </div>
+        <div class="row views">
+          <button class="ghost sm" data-v="iso">منظور</button>
+          <button class="ghost sm" data-v="front">أمامي</button>
+          <button class="ghost sm" data-v="side">جانبي</button>
+          <button class="ghost sm" data-v="top">علوي</button>
+        </div>
+        <label class="chk"><input type="checkbox" id="ghostToggle" checked> إظهار العناصر المستقبلية شفافة</label>
+        <div id="activeList" class="active-list"></div>
+        <div class="row">
+          <button class="ghost" id="btnShot">صورة</button>
+          <button class="ghost" id="btnRec">تسجيل فيديو</button>
+        </div>
+        <div id="linkStatus" class="muted"></div>
+      </aside>
+    </div>
+    <div class="card timeline">
+      <button id="btnPlay" class="primary">تشغيل</button>
+      <select id="speed"><option value="1">×1</option><option value="3" selected>×3</option><option value="8">×8</option><option value="20">×20</option></select>
+      <input type="range" id="slider" min="0" max="100" step="0.1" value="0">
+      <div id="simDate" class="sim-date"></div>
+    </div>
+  </section>
+
+  <!-- ٦ المتابعة -->
+  <section id="tab-track" class="tab">
+    <div class="card">
+      <div class="bar-head">
+        <h2>تحديث الإنجاز</h2>
+        <div class="row">
+          <label class="inline">تاريخ البيانات <input type="date" id="dataDate"></label>
+          <label class="inline">التكلفة الفعلية حتى التاريخ <input type="number" id="actualCost" placeholder="اختياري" class="num"></label>
+          <button class="ghost" id="btnAutoPlan">تعبئة بالنسب المخططة</button>
+          <button class="primary" id="btnRecord">اعتماد التحديث</button>
+          <button class="primary" id="btnReport">تقرير المتابعة</button>
+        </div>
+      </div>
+      <div id="kpiTrack" class="kpis"></div>
+      <div class="cols two">
+        <div><h3>منحنى S</h3><div id="scurve"></div></div>
+        <div><h3>الإنجاز حسب المرحلة</h3><div id="phaseBars"></div></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="bar-head"><h2>الإنجاز الفعلي للأنشطة</h2><input id="trackFilter" placeholder="بحث" class="search"></div>
+      <div class="scroll"><table class="grid" id="trackTable"></table></div>
+    </div>
+  </section>
+</main>
+
+<div id="printArea"></div>
+<div id="toast"></div>
+<script type="module" src="js/app.js"></script>
+</body>
+</html>
