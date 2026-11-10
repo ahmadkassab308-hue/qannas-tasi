@@ -1,0 +1,92 @@
+{
+  "project": {
+    "name": "Example Villa",
+    "units": "mm"
+  },
+  "levels": [
+    {
+      "name": "Ground Floor",
+      "elevation": 0.0,
+      "height": 3.2,
+      "dxf": "ground_floor.dxf"
+    },
+    {
+      "name": "First Floor",
+      "elevation": 3.2,
+      "height": 3.2,
+      "dxf": "first_floor.dxf"
+    },
+    {
+      "name": "Second Floor",
+      "elevation": 6.4,
+      "height": 3.2,
+      "copy_from": "First Floor"
+    },
+    {
+      "name": "Roof",
+      "elevation": 9.6,
+      "height": 0.0,
+      "roof_slab_from": "Second Floor"
+    }
+  ],
+  "layers": {
+    "walls": [
+      "A-WALL"
+    ],
+    "columns": [
+      "S-COLS"
+    ],
+    "doors": [
+      "A-DOOR"
+    ],
+    "windows": [
+      "A-GLAZ"
+    ],
+    "grids": [
+      "S-GRID"
+    ],
+    "rooms": [
+      "A-AREA-IDEN"
+    ],
+    "slabs": []
+  },
+  "wall_centerline_layers": [],
+  "blocks": {
+    "doors": [
+      "*door*",
+      "*dr*",
+      "*باب*",
+      "*tuer*",
+      "*porte*",
+      "d[0-9]*"
+    ],
+    "windows": [
+      "*window*",
+      "*win*",
+      "*شباك*",
+      "*نافذ*",
+      "*fenster*",
+      "w[0-9]*"
+    ],
+    "columns": [
+      "*column*",
+      "*col*",
+      "*عمود*"
+    ]
+  },
+  "defaults": {
+    "wall_min_thickness": 0.05,
+    "wall_max_thickness": 0.6,
+    "wall_min_length": 0.15,
+    "centerline_wall_thickness": 0.2,
+    "max_opening_width": 3.5,
+    "door_height": 2.1,
+    "window_height": 1.5,
+    "window_sill": 0.9,
+    "slab_thickness": 0.2,
+    "auto_slab": true,
+    "column_min_size": 0.15,
+    "column_max_size": 2.0,
+    "grid_min_length": 2.0
+  }
+}
