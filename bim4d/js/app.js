@@ -447,8 +447,19 @@ function report() {
   ${look.slice(0, 25).map(t => `<tr><td>${t.id}</td><td>${esc(t.fullName)}</td><td class="n">${fmtShort(t.start)}</td><td class="n">${fmtShort(t.finish)}</td><td class="n ${t.critical ? 'bad' : ''}">${t.TF}</td></tr>`).join('')}</table>
   <h2>التوصيات</h2><div class="note">${rec.map(r => '• ' + r).join('<br>')}</div>
   </div>`;
+  if (window.claude?.use) { saveReportHtml(); return; }
   document.body.classList.add('printing');
   setTimeout(() => window.print(), 300);
+}
+
+// في صفحة الرابط تُمنع الطباعة، فيُحفظ التقرير ملف HTML يُفتح ويُطبع من المتصفح
+async function saveReportHtml() {
+  let css = '';
+  try { css = await (await fetch('css/style.css')).text(); } catch { /* بدون تنسيق */ }
+  const doc = `<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="UTF-8"><title>تقرير متابعة ${esc(P.name || '')}</title>` +
+    `<style>${css}\nbody{background:#fff;padding:16px;max-width:900px;margin:auto}#printArea{display:block!important}</style></head>` +
+    `<body><div id="printArea">${$('#printArea').innerHTML}</div><script>setTimeout(()=>print(),500)<\/script></body></html>`;
+  await download(`تقرير-متابعة-${P.dataDate}.html`, doc, 'text/html');
 }
 window.addEventListener('afterprint', () => document.body.classList.remove('printing'));
 

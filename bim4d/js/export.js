@@ -4,8 +4,25 @@ import { TRADE } from './library.js';
 
 const x = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&apos;' }[c]));
 
-export function download(name, data, type) {
+const note = msg => {
+  const t = document.getElementById('toast');
+  if (!t) return;
+  t.textContent = msg; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 4000);
+};
+
+// داخل رابط claude.ai يمر التنزيل عبر نافذة تأكيد؛ وخارجه تنزيل مباشر
+export async function download(name, data, type) {
   const blob = data instanceof Blob ? data : new Blob([data], { type });
+  const dl = window.claude?.use ? await window.claude.use('downloads').catch(() => null) : null;
+  if (dl) {
+    try { await dl.save({ filename: name, data: blob }); }
+    catch (e) {
+      if (e?.code === 'rejected_extension') note('هذه الصيغة لا تُنزَّل من صفحة الرابط. شغّل المنصة من المستودع لتنزيلها.');
+      else if (e?.code !== 'declined') note('تعذر التنزيل: ' + (e?.message || e));
+    }
+    return;
+  }
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
   a.download = name;
