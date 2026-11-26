@@ -17,3 +17,6 @@
 ## الأدوات
 drawing_info، list_layers، draw_line، draw_polyline، draw_circle، add_text،
 quantity_takeoff لحصر الأطوال والمساحات والبلوكات لكل طبقة، send_command، save_drawing.
+
+## تثبيت بنقرة واحدة
+انقر مرتين على `install.bat`. يثبت المتطلبات ويسجل الخادم في Claude Code وClaude Desktop معًا.
